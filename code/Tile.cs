@@ -1,8 +1,8 @@
 ﻿namespace Minesweeper.code;
 
-public enum Tile
+public struct Tile
 {
-    Marked = -2,
-    Bomb = -1,
-    Empty = 0,
+    public TileState State;
+    public int AdjacentBombs;
+    public Tile(){}
 }
