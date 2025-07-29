@@ -2,12 +2,13 @@
 using System;
 public class PlayingField
 {
-    private bool generated;
+    private bool BombsSpawned;
 
     public readonly int BombCount = 0;
     public int Height;
     public int Width;
     public int Covered;
+    public HashSet<Tuple<int, int>> Bombs = new();
     public Tile[,] Field
     {
         get;
@@ -29,7 +30,7 @@ public class PlayingField
         }
     }
 
-    private void GenerateField(int initialX, int initialY)
+    private void SpawnBombs(int initialX, int initialY)
     {
         Random random = new Random();
         int i = 0;
@@ -38,9 +39,10 @@ public class PlayingField
             // a better solution probably exists
             int x = random.Next(0, Width);
             int y = random.Next(0, Height);
-            if (Field[y, x].State == TileState.Empty && !(x == initialX && y == initialY))
+            Tuple<int, int> bomb = new(x, y);
+            if (Bombs.Contains(bomb) && !(x == initialX && y == initialY))
             {
-                Field[y, x].State = TileState.Bomb;
+                Bombs.Add(new Tuple<int, int>(x, y));
                 i++;
             }
         }
@@ -48,21 +50,24 @@ public class PlayingField
 
     public Outcome Reveal(int x, int y)
     {
-        if (!generated)
+        if (!BombsSpawned)
         {
-            GenerateField(x, y);
-            generated = true;
+            SpawnBombs(x, y);
+            BombsSpawned = true;
+            return Outcome.Ongoing;
         }
 
-        if (Field[y, x].State == TileState.Bomb)
+        if (Bombs.Contains(new Tuple<int, int>(x, y)))
         {
             return Outcome.Loss;
         }
+
+        List<Tuple<int, int>> surrounding = ListSurrounding(x, y);
+        Field[y, x].State = TileState.Empty;
+        Field[y, x].AdjacentBombs = CountSurroundingBombs(surrounding);
+        UncoverTiles(surrounding);
         
-        Field[y, x].AdjacentBombs = CountSurroundingBombs(x, y);
-        UncoverTiles(x, y);
-        
-        return Covered == 0 ?  Outcome.Win : Outcome.Loss;
+        return Covered == 0 ?  Outcome.Win : Outcome.Ongoing;
     }
 
     private List<Tuple<int, int>> ListSurrounding(int x, int y)
@@ -77,30 +82,43 @@ public class PlayingField
         {
             for (int k = bottom; k <= top; k++)
             {
-                if (Field[k, i].State == TileState.Bomb)
+                Tuple<int, int> position = new(k, i);
+                if (Bombs.Contains(position))
                 {
-                    surrounding.Add(new Tuple<int,int>(i, k));
+                    surrounding.Add(position);
                 }
             }
         }
         return surrounding;
     }
 
-    private int CountSurroundingBombs(int x, int y)
+    private int CountSurroundingBombs(List<Tuple<int, int>> surrounding)
     {
         int count = 0;
-        foreach (Tuple<int, int> coords in ListSurrounding(x, y))
+        foreach (Tuple<int, int> coords in surrounding)
         {   
-            int newX = coords.Item1;
-            int newY = coords.Item2;
-            count += Field[newY, newX].State == TileState.Bomb ? 1 : 0;
+            count += Bombs.Contains(coords) ? 1 : 0;
         }
         
         return count;
     }
 
-    private void UncoverTiles(int x, int y)
+    private void UncoverTiles(List<Tuple<int, int>> surrounding)
     {
         //TODO: find out how empty tiles are uncovered
+        foreach (Tuple<int, int> tile in surrounding)
+        {
+            if (Field[tile.Item1, tile.Item2].State == TileState.Empty || Bombs.Contains(tile))
+            {
+                continue;
+            }
+            List<Tuple<int, int>> nextSurrounding = ListSurrounding(tile.Item1, tile.Item2);
+            Field[tile.Item1, tile.Item2].AdjacentBombs = CountSurroundingBombs(nextSurrounding);
+            if (Field[tile.Item1, tile.Item2].AdjacentBombs == 0)
+            {
+                UncoverTiles(nextSurrounding);
+            }
+            
+        }
     }
 }

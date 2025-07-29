@@ -4,5 +4,10 @@ public struct Tile
 {
     public TileState State;
     public int AdjacentBombs;
-    public Tile(){}
+
+    public Tile()
+    {
+        State = TileState.Unknown;
+        AdjacentBombs = 0;
+    }
 }
