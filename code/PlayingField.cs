@@ -2,28 +2,30 @@
 using System;
 public class PlayingField
 {
-    private bool BombsSpawned;
+    private bool _bombsSpawned;
 
-    public readonly int BombCount = 0;
-    public int Height;
-    public int Width;
-    public int Covered;
-    public HashSet<Tuple<int, int>> Bombs = new();
-    public Tile[,] Field
-    {
-        get;
-        private set;
-    }
+    private readonly int _bombCount;
+    private readonly int _height;
+    private readonly int _width;
+    private readonly int _covered;
+    private readonly HashSet<Tuple<int, int>> _bombs = new();
 
-    public PlayingField(int width, int height)
+    public readonly Tile[,] Field;
+    // {
+    //     get;
+    //     private set;
+    // }
+
+    public PlayingField(int width, int height, int bombCount)
     {
-        Height = height;
-        Width = width;
-        Covered = height * width;
-        Field = new Tile[height, width];
-        for (int h = 0; h < height; h++)
+        _height = height;
+        _width = width;
+        _covered = _height * _width - _bombCount;
+        _bombCount = bombCount;
+        Field = new Tile[_height, _width];
+        for (int h = 0; h < _height; h++)
         {
-            for (int w = 0; w < width; w++)
+            for (int w = 0; w < _width; w++)
             {
                 Field[h, w] = new Tile();
             }
@@ -34,15 +36,15 @@ public class PlayingField
     {
         Random random = new Random();
         int i = 0;
-        while (i < BombCount)
+        while (i < _bombCount)
         {
             // a better solution probably exists
-            int x = random.Next(0, Width);
-            int y = random.Next(0, Height);
+            int x = random.Next(0, _width);
+            int y = random.Next(0, _height);
             Tuple<int, int> bomb = new(x, y);
-            if (Bombs.Contains(bomb) && !(x == initialX && y == initialY))
+            if (_bombs.Contains(bomb) && !(x == initialX && y == initialY))
             {
-                Bombs.Add(new Tuple<int, int>(x, y));
+                _bombs.Add(new Tuple<int, int>(x, y));
                 i++;
             }
         }
@@ -50,14 +52,14 @@ public class PlayingField
 
     public Outcome Reveal(int x, int y)
     {
-        if (!BombsSpawned)
+        if (!_bombsSpawned)
         {
             SpawnBombs(x, y);
-            BombsSpawned = true;
+            _bombsSpawned = true;
             return Outcome.Ongoing;
         }
 
-        if (Bombs.Contains(new Tuple<int, int>(x, y)))
+        if (_bombs.Contains(new Tuple<int, int>(x, y)))
         {
             return Outcome.Loss;
         }
@@ -67,23 +69,23 @@ public class PlayingField
         Field[y, x].AdjacentBombs = CountSurroundingBombs(surrounding);
         UncoverTiles(surrounding);
         
-        return Covered == 0 ?  Outcome.Win : Outcome.Ongoing;
+        return _covered == 0 ?  Outcome.Win : Outcome.Ongoing;
     }
 
     private List<Tuple<int, int>> ListSurrounding(int x, int y)
     {
         List<Tuple<int, int>> surrounding = new();
         int left = (x == 0) ? x : x - 1;
-        int right = (x == Width - 1) ? x : x + 1;
+        int right = (x == _width - 1) ? x : x + 1;
         int bottom = (y == 0) ? y : y - 1;
-        int top = (y == Height - 1) ? y : y + 1;
+        int top = (y == _height - 1) ? y : y + 1;
             
         for (int i = left; i <= right; i++)
         {
             for (int k = bottom; k <= top; k++)
             {
                 Tuple<int, int> position = new(k, i);
-                if (Bombs.Contains(position))
+                if (_bombs.Contains(position))
                 {
                     surrounding.Add(position);
                 }
@@ -97,7 +99,7 @@ public class PlayingField
         int count = 0;
         foreach (Tuple<int, int> coords in surrounding)
         {   
-            count += Bombs.Contains(coords) ? 1 : 0;
+            count += _bombs.Contains(coords) ? 1 : 0;
         }
         
         return count;
@@ -105,10 +107,9 @@ public class PlayingField
 
     private void UncoverTiles(List<Tuple<int, int>> surrounding)
     {
-        //TODO: find out how empty tiles are uncovered
         foreach (Tuple<int, int> tile in surrounding)
         {
-            if (Field[tile.Item1, tile.Item2].State == TileState.Empty || Bombs.Contains(tile))
+            if (Field[tile.Item1, tile.Item2].State == TileState.Empty || _bombs.Contains(tile))
             {
                 continue;
             }
