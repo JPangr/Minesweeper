@@ -10,11 +10,11 @@ public class PlayingField
     private readonly int _covered;
     private readonly HashSet<Tuple<int, int>> _bombs = new();
 
-    public readonly Tile[,] Field;
-    // {
-    //     get;
-    //     private set;
-    // }
+    public Tile[,] Field
+    {
+        get;
+        private set;
+    }
 
     public PlayingField(int width, int height, int bombCount)
     {
@@ -121,5 +121,10 @@ public class PlayingField
             }
             
         }
+    }
+    
+    public void FlagTile(int x, int y)
+    {
+        Field[y, x].State = TileState.Flagged;
     }
 }

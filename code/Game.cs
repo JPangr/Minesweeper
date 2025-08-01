@@ -1,28 +1,56 @@
-﻿namespace Minesweeper.code;
+﻿using System.Diagnostics;
+
+namespace Minesweeper.code;
 
 public class Game
 {
     public required PlayingField PlayingField;
-    
+    private readonly Difficulty _selectedDifficulty;
+    private readonly int _width;
+    private readonly int _height;
+    private readonly int _bombCount;
     public Game(Difficulty difficulty)
-    {
-        switch (difficulty)
+    {   
+        _selectedDifficulty = difficulty;
+        switch (_selectedDifficulty)
         {
             case Difficulty.Easy:
-                PlayingField = new(width: 9, height: 9, bombCount: 10);
+                _width = 9;
+                _height = 9;
+                _bombCount = 10;
                 break;
             case Difficulty.Normal:
-                PlayingField = new(width: 16, height: 16, bombCount: 40);
+                _width = 16;
+                _height = 16;
+                _bombCount = 40;
                 break;
             case Difficulty.Hard:
-                PlayingField = new(width: 30, height: 16, bombCount: 99);
+                _width = 30;
+                _height = 16;
+                _bombCount = 99;
                 break;
         }
+        PlayingField = new(_width, _height, _bombCount);
     }
 
     public Outcome Play()
     {
-        // main game loop here
-        return Outcome.Win;
+        while (true)
+        {
+            int x = 0; //input from UI here
+            int y = 0; //input from UI here
+
+            Outcome outcome = PlayingField.Reveal(x, y);
+            if (outcome == Outcome.Ongoing) continue;
+            
+            return outcome;
+        }
+        Debug.Assert(false);
+    }
+
+    public void Restart()
+    {
+        PlayingField = new(_width, _height, _bombCount);
+        Play();
     }
 }
